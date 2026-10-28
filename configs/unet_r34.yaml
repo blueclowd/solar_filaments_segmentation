@@ -1,0 +1,49 @@
+seed: 42
+output_dir: runs/unet_r34
+
+data:
+  # Falls back to searching /kaggle/input for the annotation JSON if this path does not exist.
+  root: /kaggle/input/filament-segmentation-2026/MAGFiLO_1.0_Kaggle_2026
+  image_size: 1024          # full disk is resized from 2048 to this before anything else
+  crop_size: 512            # random training crops at image_size; null trains on the full disk
+  fg_crop_prob: 0.7         # fraction of crops centred on a filament (filaments are sparse)
+  label_mode: random_annotator   # random_annotator | soft (mean of all annotators)
+  repeat: 4                 # passes over the training images per epoch
+  val_fraction: 0.15
+  split_by: month           # month | day | image; grouping keeps the same filaments out of both splits
+  cache_images: true
+  num_workers: 4
+
+model:
+  arch: Unet                # any segmentation_models_pytorch class: Unet, UnetPlusPlus, MAnet, ...
+  encoder: resnet34
+  encoder_weights: imagenet
+  kwargs:
+    decoder_attention_type: scse
+
+train:
+  epochs: 40
+  batch_size: 8
+  lr: 3.0e-4
+  min_lr_ratio: 0.01
+  weight_decay: 1.0e-4
+  warmup_epochs: 1
+  grad_clip: 1.0
+  amp: true
+  multi_gpu: true           # nn.DataParallel when more than one GPU is visible (e.g. Kaggle T4 x2)
+  val_every: 2
+  val_batch_size: 4
+  loss:
+    bce_weight: 1.0
+    dice_weight: 1.0
+    pos_weight: null
+
+postprocess:                # applied at the original 2048 x 2048 resolution
+  threshold: 0.5
+  close_radius: 3           # morphological closing to reconnect small gaps
+  min_area: 200             # drop components smaller than this (pixels)
+  merge_distance: 12        # components closer than this are merged into one filament (0 disables)
+
+eval:
+  tta: false                # flip TTA during validation (slower)
+  threshold_sweep: [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7]
