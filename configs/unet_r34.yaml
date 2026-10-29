@@ -22,7 +22,7 @@ model:
     decoder_attention_type: scse
 
 train:
-  epochs: 40
+  epochs: 15
   batch_size: 8
   lr: 3.0e-4
   min_lr_ratio: 0.01
