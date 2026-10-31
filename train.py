@@ -1,7 +1,10 @@
 """Train a U-Net-family filament segmenter.
 
     python train.py --config configs/unet_r34.yaml
-    python train.py --config configs/unet_r34.yaml model.arch=UnetPlusPlus model.encoder=efficientnet-b3
+    python train.py --epochs 60 --lr 5e-4 --batch-size 16 --arch UnetPlusPlus --encoder efficientnet-b3
+    python train.py --config configs/unet_r34.yaml train.grad_clip=0.5 postprocess.min_area=300
+
+Values come from the YAML config, then `dotted.key=value` overrides, then the explicit flags below.
 """
 
 import argparse
@@ -59,14 +62,60 @@ def save_checkpoint(path: Path, model: nn.Module, cfg: dict, epoch: int, metrics
     )
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
+# (flag, config key, type, help)
+HPARAM_FLAGS = [
+    ("--output-dir", "output_dir", str, "where checkpoints and logs are written"),
+    ("--seed", "seed", int, "random seed (also fixes the train/val split)"),
+    ("--arch", "model.arch", str, "segmentation_models_pytorch architecture, e.g. Unet, UnetPlusPlus, MAnet"),
+    ("--encoder", "model.encoder", str, "encoder backbone, e.g. resnet34, efficientnet-b3"),
+    ("--epochs", "train.epochs", int, "number of training epochs"),
+    ("--batch-size", "train.batch_size", int, "training batch size (summed over GPUs)"),
+    ("--lr", "train.lr", float, "peak learning rate"),
+    ("--weight-decay", "train.weight_decay", float, "AdamW weight decay"),
+    ("--warmup-epochs", "train.warmup_epochs", float, "linear warmup length in epochs"),
+    ("--val-every", "train.val_every", int, "validate every N epochs"),
+    ("--bce-weight", "train.loss.bce_weight", float, "weight of the BCE term"),
+    ("--dice-weight", "train.loss.dice_weight", float, "weight of the Dice term"),
+    ("--image-size", "data.image_size", int, "full-disk resize (from 2048); must be divisible by 32"),
+    ("--crop-size", "data.crop_size", int, "training crop size; 0 trains on the full disk"),
+    ("--label-mode", "data.label_mode", str, "random_annotator or soft"),
+    ("--repeat", "data.repeat", int, "passes over the training images per epoch"),
+    ("--num-workers", "data.num_workers", int, "DataLoader workers"),
+    ("--threshold", "postprocess.threshold", float, "probability threshold used during validation"),
+]
+
+
+def parse_args() -> tuple[dict, argparse.Namespace]:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", default="configs/unet_r34.yaml")
-    parser.add_argument("overrides", nargs="*", help="dotted.key=value config overrides")
+    for flag, key, typ, help_text in HPARAM_FLAGS:
+        parser.add_argument(flag, type=typ, default=None, help=f"{help_text} [config: {key}]")
+    parser.add_argument("--no-amp", action="store_true", help="disable mixed precision")
+    parser.add_argument("overrides", nargs="*", help="any other setting as dotted.key=value")
     args = parser.parse_args()
 
     cfg = load_config(args.config, args.overrides)
+    for flag, key, _, _ in HPARAM_FLAGS:
+        value = getattr(args, flag.lstrip("-").replace("-", "_"))
+        if value is not None:
+            *parents, leaf = key.split(".")
+            node = cfg
+            for p in parents:
+                node = node.setdefault(p, {})
+            node[leaf] = value
+    if args.no_amp:
+        cfg["train"]["amp"] = False
+    return cfg, args
+
+
+def main() -> None:
+    cfg, _ = parse_args()
     dcfg, tcfg = cfg["data"], cfg["train"]
+    for _, key, _, _ in HPARAM_FLAGS:
+        node = cfg
+        for part in key.split("."):
+            node = node[part]
+        print(f"{key:24s} {node}")
     out_dir = Path(cfg["output_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "config.yaml").write_text(yaml.safe_dump(cfg, sort_keys=False))
