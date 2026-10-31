@@ -23,7 +23,12 @@ def intensity_lut(rng: np.random.Generator) -> np.ndarray:
 
 def lut_stats(img: np.ndarray, lut: np.ndarray) -> tuple[float, float]:
     """Mean and std of `lut[img]` over the whole frame, without materialising it."""
-    hist = np.bincount(img.ravel(), minlength=256).astype(np.float64)
+    return hist_stats(np.bincount(img.ravel(), minlength=256), lut)
+
+
+def hist_stats(hist: np.ndarray, lut: np.ndarray) -> tuple[float, float]:
+    """Mean and std of an image with 256-bin histogram `hist` after mapping through `lut`."""
+    hist = hist.astype(np.float64)
     n = hist.sum()
     mean = (hist * lut).sum() / n
     var = (hist * lut.astype(np.float64) ** 2).sum() / n - mean ** 2
