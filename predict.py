@@ -46,6 +46,8 @@ def main() -> None:
     model = build_model(cfg["model"], pretrained=False)
     model.load_state_dict(ckpt["model"])
     model.to(device).eval()
+    if cfg["train"].get("channels_last"):
+        model.to(memory_format=torch.channels_last)
 
     image_dir = Path(args.images) if args.images else resolve_data_root(cfg["data"]["root"]) / "test" / "test_images"
     paths = sorted(p for p in image_dir.iterdir() if p.suffix.lower() in (".jpeg", ".jpg", ".png"))

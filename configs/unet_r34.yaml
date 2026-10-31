@@ -30,6 +30,7 @@ train:
   warmup_epochs: 1
   grad_clip: 1.0
   amp: true
+  channels_last: true       # NHWC memory layout; faster convolutions with fp16 on tensor-core GPUs
   multi_gpu: false          # nn.DataParallel over all visible GPUs; slower than one T4 for this model on Kaggle T4 x2
   val_every: 2
   val_batch_size: 4

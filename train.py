@@ -146,6 +146,8 @@ def main() -> None:
     val_loader = DataLoader(val_ds, batch_size=tcfg["val_batch_size"], shuffle=False, **loader_kw)
 
     model = build_model(cfg["model"]).to(device)
+    if tcfg.get("channels_last"):
+        model = model.to(memory_format=torch.channels_last)
     if tcfg.get("multi_gpu") and torch.cuda.device_count() > 1:
         print(f"using DataParallel on {torch.cuda.device_count()} GPUs")
         model = nn.DataParallel(model)

@@ -17,7 +17,7 @@ import torch
 from pycocotools import mask as mask_utils
 from torch.utils.data import Dataset
 
-from .augment import augment_geometric, augment_intensity, random_crop
+from .augment import IDENTITY_LUT, blur_and_noise, intensity_lut, lut_stats, random_crop_transform, warp
 
 ORIG_SIZE = 2048
 
@@ -156,15 +156,19 @@ class FilamentTrainDataset(Dataset):
         i = idx % len(self.records)
         # DataLoader reseeds `random` per worker, numpy's global RNG is not.
         rng = np.random.default_rng(random.getrandbits(64))
-        img = self.images[i].astype(np.float32) / 255.0
+        img = self.images[i]
         target = self._target(self.records[i])
+        size = self.crop_size or self.image_size
+
+        lut = intensity_lut(rng) if self.augment else IDENTITY_LUT
+        mean, std = lut_stats(img, lut)
+        m = random_crop_transform(target, size, self.fg_crop_prob, rng, self.augment)
+        img = lut[warp(img, m, size)]
+        target = warp(target, m, size)
         if self.augment:
-            img = augment_intensity(img, rng)
-            img, target = augment_geometric(img, target, rng)
-        img = normalize(img)
-        if self.crop_size:
-            img, target = random_crop(img, target, self.crop_size, self.fg_crop_prob, rng)
-        return torch.from_numpy(np.ascontiguousarray(img))[None], torch.from_numpy(np.ascontiguousarray(target))[None]
+            img = blur_and_noise(img, rng)
+        img = (img - mean) / (std + 1e-6)
+        return torch.from_numpy(img.astype(np.float32))[None], torch.from_numpy(target)[None]
 
 
 class FilamentEvalDataset(Dataset):
