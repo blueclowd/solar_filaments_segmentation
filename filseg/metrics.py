@@ -21,8 +21,8 @@ class ImageStats:
         return self.iou_sum / denom if denom else 1.0
 
 
-def match_instances(pred_labels: np.ndarray, gt_masks: np.ndarray, iou_threshold: float = 0.5) -> ImageStats:
-    """`pred_labels`: int label map (non-overlapping). `gt_masks`: (N, H, W) bool, may overlap."""
+def overlap_matrices(pred_labels: np.ndarray, gt_masks: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(intersection, IoU), each (n_gt, n_pred). `pred_labels`: int label map; `gt_masks`: (N, H, W) bool."""
     n_pred, n_gt = int(pred_labels.max()), len(gt_masks)
     pred_area = np.bincount(pred_labels.ravel(), minlength=n_pred + 1)[1:]
     inter = np.zeros((n_gt, n_pred))
@@ -30,9 +30,12 @@ def match_instances(pred_labels: np.ndarray, gt_masks: np.ndarray, iou_threshold
         inter[g] = np.bincount(pred_labels[m], minlength=n_pred + 1)[1:]
     gt_area = gt_masks.reshape(n_gt, -1).sum(1) if n_gt else np.zeros(0)
     union = gt_area[:, None] + pred_area[None, :] - inter
-    iou = np.divide(inter, union, out=np.zeros_like(inter), where=union > 0)
+    return inter, np.divide(inter, union, out=np.zeros_like(inter), where=union > 0)
 
-    tp, iou_sum, used_g, used_p = 0, 0.0, set(), set()
+
+def match_pairs(iou: np.ndarray, iou_threshold: float = 0.5) -> list[tuple[int, int, float]]:
+    """Greedy one-to-one matching; returns (gt index, prediction index (label - 1), IoU)."""
+    pairs, used_g, used_p = [], set(), set()
     order = np.unravel_index(np.argsort(-iou, axis=None), iou.shape) if iou.size else ([], [])
     for g, p in zip(*order):
         if iou[g, p] <= iou_threshold:
@@ -41,8 +44,16 @@ def match_instances(pred_labels: np.ndarray, gt_masks: np.ndarray, iou_threshold
             continue
         used_g.add(g)
         used_p.add(p)
-        tp += 1
-        iou_sum += float(iou[g, p])
+        pairs.append((int(g), int(p), float(iou[g, p])))
+    return pairs
+
+
+def match_instances(pred_labels: np.ndarray, gt_masks: np.ndarray, iou_threshold: float = 0.5) -> ImageStats:
+    """`pred_labels`: int label map (non-overlapping). `gt_masks`: (N, H, W) bool, may overlap."""
+    n_pred, n_gt = int(pred_labels.max()), len(gt_masks)
+    inter, iou = overlap_matrices(pred_labels, gt_masks)
+    pairs = match_pairs(iou, iou_threshold)
+    tp, iou_sum = len(pairs), sum(p[2] for p in pairs)
 
     pred_fg = pred_labels > 0
     gt_fg = gt_masks.any(0) if n_gt else np.zeros_like(pred_fg)
