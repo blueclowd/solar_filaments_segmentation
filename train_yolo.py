@@ -1,6 +1,7 @@
 """Train a YOLO filament detector (boxes only) for the YOLO + U-Net hybrid.
 
     python train_yolo.py --unet-run runs/unet_r34 --model yolo11s.pt --imgsz 1024 --epochs 100
+    python train_yolo.py --unet-run runs/unet_r34 --full ...  # final model on all images -> last.pt
 
 `--unet-run` reuses that run's validation split so both models are tuned and scored on the same images.
 Extra Ultralytics training arguments can be passed as key=value, e.g. `mosaic=0.5 lr0=0.005`.
@@ -28,6 +29,9 @@ def main() -> None:
     parser.add_argument("--patience", type=int, default=30)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--out-dir", default="runs/yolo")
+    parser.add_argument("--full", action="store_true",
+                        help="final model: train on all images, no early stopping; use last.pt "
+                             "(validation images are also in training, so their scores are optimistic)")
     parser.add_argument("overrides", nargs="*", help="extra Ultralytics train arguments as key=value")
     args = parser.parse_args()
 
@@ -41,6 +45,8 @@ def main() -> None:
         val = [r for r in records if r.file_name in val_names]
     else:
         train, val = split_records(records, dcfg["val_fraction"], cfg["seed"], dcfg["split_by"])
+    if args.full:
+        train, args.patience = records, args.epochs
     out_dir = Path(args.out_dir)
     data_yaml = export_yolo_dataset(train, val, root / "train" / "train_images", out_dir / "data")
     print(f"YOLO dataset: {len(train)} train images ({sum(len(r.annotations) for r in train)} annotation sets), "
@@ -56,7 +62,8 @@ def main() -> None:
     )
     train_args.update({k: yaml.safe_load(v) for k, v in (o.split("=", 1) for o in args.overrides)})
     YOLO(args.model).train(**train_args)
-    print(f"best weights: {out_dir / 'train' / 'weights' / 'best.pt'}")
+    print(f"{'final' if args.full else 'best'} weights: "
+          f"{out_dir / 'train' / 'weights' / ('last.pt' if args.full else 'best.pt')}")
 
 
 if __name__ == "__main__":

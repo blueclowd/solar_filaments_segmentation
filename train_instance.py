@@ -2,6 +2,7 @@
 
     python train_instance.py --config configs/instance_r34.yaml --split-from runs/unet_r34
     python train_instance.py --epochs 30 --crop-size 384 --encoder resnet50
+    python train_instance.py --split-from runs/unet_r34 --full --output-dir runs/instance_full  # final model
 
 Validation reports, per ground-truth filament with its true box: mean mask IoU, the fraction with
 IoU > 0.5 (a PQ true positive), and `pq_oracle` = mean of IoU over those matches, i.e. the PQ this model
@@ -72,6 +73,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", default="configs/instance_r34.yaml")
     parser.add_argument("--split-from", help="run folder whose split.json defines the validation images")
+    parser.add_argument("--full", action="store_true",
+                        help="final model: train on all images; validation images are still scored (optimistic, "
+                             "monitoring only) and best.pt is the last epoch")
     for flag, key, typ in FLAGS:
         parser.add_argument(flag, type=typ, default=None, help=f"[config: {key}]")
     parser.add_argument("overrides", nargs="*", help="any other setting as dotted.key=value")
@@ -106,6 +110,8 @@ def main() -> None:
     else:
         train_recs, val_recs = split_records(records, dcfg["val_fraction"], cfg["seed"], dcfg["split_by"])
     (out_dir / "split.json").write_text(json.dumps({"val": [r.file_name for r in val_recs]}, indent=1))
+    if args.full:
+        train_recs = records
 
     params = WindowParams(dcfg["crop_size"], dcfg["margin"], dcfg["min_window"], dcfg["max_aspect"])
     t0 = time.time()
@@ -151,7 +157,7 @@ def main() -> None:
         row = {"epoch": epoch, "train_loss": running / len(train_loader), "lr": scheduler.get_last_lr()[0]}
         if epoch % tcfg["val_every"] == 0 or epoch == tcfg["epochs"]:
             row.update(evaluate(model, val_loader, device, amp, criterion, cfg["postprocess"]["threshold"]))
-            if row["pq_oracle"] > best:
+            if row["pq_oracle"] > best or args.full:
                 best = row["pq_oracle"]
                 save_checkpoint(out_dir / "best.pt", unwrap(model), cfg, epoch, row)
         save_checkpoint(out_dir / "last.pt", unwrap(model), cfg, epoch, row)
