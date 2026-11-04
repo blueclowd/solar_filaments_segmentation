@@ -42,6 +42,9 @@ FLAGS = [
     ("--margin", "data.margin", float),
     ("--box-jitter", "data.box_jitter", float),
     ("--num-workers", "data.num_workers", int),
+    ("--cldice-weight", "train.loss.cldice_weight", float),
+    ("--cldice-iters", "train.loss.cldice_iters", int),
+    ("--lovasz-weight", "train.loss.lovasz_weight", float),
 ]
 
 
