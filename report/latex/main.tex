@@ -34,12 +34,12 @@
 \subtitle{A Solution to the Solar Filament Segmentation Challenge 2026} % DO NOT CHANGE
 
 
-\author{Vincent Liu}
+\author{Hung-Ting Liu}
 \affiliation{%
-  \city{TODO City}
-  \country{TODO Country}
+  \city{Singapore}
+  \country{Singapore}
 }
-\email{TODO@example.com}   % <- Replace with your own email
+\email{lhungting@gmail.com}   % <- Replace with your own email
 
 \begin{abstract}
     This report describes our solution to the Solar Filament Segmentation Challenge~2026, a Kaggle competition on automatic segmentation of solar filaments in GONG H-$\alpha$ observations. We use a two-stage pipeline: a YOLO11 detector proposes one box per filament, and a U-Net with a ResNet-34 encoder segments each filament from a full-resolution crop around its box, conditioned on a box-mask input channel. On a month-grouped validation split the pipeline reaches a panoptic quality (PQ) of 0.448, against 0.403 for a single global U-Net with connected-component post-processing, and 0.39 on the public leaderboard. With ground-truth boxes the segmenter reaches PQ 0.686, so detection is the bottleneck; we show that this ceiling is largely set by the labels, as two annotators of the same image agree on only 58\% of filaments at IoU\,$>$\,0.5. Code, weights and a reproducibility notebook: \url{https://github.com/blueclowd/solar_filaments_segmentation}.
@@ -110,12 +110,19 @@
     \end{tabularx}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure*}[t]
     \centering
-    \includegraphics[width=\columnwidth]{figures/disagreement_typical.jpg}
+    \includegraphics[width=\textwidth]{figures/disagreement_typical.jpg}
     \caption{Image with median annotator agreement. Left: annotator A; middle: annotator B; right: filaments without a match in the other set, labelled with the reason.}
     \label{fig:agreement}
-\end{figure}
+\end{figure*}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/test_predictions.jpg}
+    \caption{Final-model predictions on test images, from fewest to most filaments; one colour per filament. Right: full-resolution zoom of the busiest image.}
+    \label{fig:examples}
+\end{figure*}
 
 \subsection{Results}
     Table~\ref{tab:results} compares the methods. The two-stage pipeline improves validation PQ by 0.045 over the global U-Net and the public score by 0.05; the gain comes from recognition (RQ 0.605\,$\rightarrow$\,0.650) and fewer merged filaments (45\,$\rightarrow$\,33), with SQ also rising (0.666\,$\rightarrow$\,0.690). With ground-truth boxes the segmenter reaches PQ 0.686 (SQ 0.711, RQ 0.965): given the right box it almost always produces a matching mask. Replacing them with detections drops RQ to 0.650 while SQ barely changes, so the remaining gap is detection. The detector saturates near the inter-annotator level: YOLO11s at 1024\,px reaches box precision/recall 0.637/0.647 and YOLO11m at 1536\,px 0.671/0.642, with the same end-to-end PQ (0.447 vs.\ 0.448) at about 4$\times$ the training cost. At the selected setting, 762 of the 1{,}257 validation filaments are matched, with 326 FP, 50 splits and 33 merges.
@@ -156,13 +163,6 @@
 \end{table}
 
     Lov\'asz hinge, which optimises IoU directly, stays within the run-to-run spread. clDice, designed for tubular structures, lowers oracle PQ by 0.013: it rewards a continuous centreline, whereas annotators draw filaments as loose bands and PQ measures overlap with those bands.
-
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=\textwidth]{figures/test_predictions.jpg}
-    \caption{Final-model predictions on test images, from fewest to most filaments; one colour per filament. Right: full-resolution zoom of the busiest image.}
-    \label{fig:examples}
-\end{figure*}
 
 \subsection{Strengths, weaknesses and improvements}
     \textbf{Strengths.} Masks follow the dark material of clearly visible filaments, including long curved filaments near the limb, and neighbouring filaments stay separate (Fig.~\ref{fig:examples}). The segmenter is close to its ceiling given a correct box, training is short (the segmenter trains in 11\,min), and inference is fast (0.31\,s per image).
