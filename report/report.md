@@ -182,6 +182,14 @@ and PQ measures overlap with those bands. We keep BCE + Dice.
 The per-filament model trains quickly because each sample is a 256×256 crop rather than a 512×512 region
 of a mostly empty disk, and every sample contains a filament.
 
+### 4.6 Qualitative results
+
+![Final-model predictions on test images, from fewest to most filaments; one colour per filament. Right: full-resolution zoom of the busiest image.](figures/test_predictions.jpg)
+
+Masks follow the dark filament material, including curved and branching filaments, and neighbouring
+filaments are kept as separate instances. **[TODO: describe visible failure cases after inspecting the
+final figure.]**
+
 ## 5. Discussion
 
 **What worked.** Separating *where* a filament is from *what shape* it has. The detector resolves
