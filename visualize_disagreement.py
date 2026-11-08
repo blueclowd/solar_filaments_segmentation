@@ -129,6 +129,18 @@ def main() -> None:
     for r in ["not in A", "not in B", "split/merge", "outline"]:
         print(f"  {r:12s} {reasons[r]:5d}  ({reasons[r] / total:.0%} of all filaments)")
 
+    # 95% bootstrap intervals, resampling images
+    keys = ["matched", "single", "split/merge", "outline"]
+    per_img = np.array([[r[5]["na"] + r[5]["nb"], 2 * len(r[5]["matched_a"])]
+                        + [sum(v in ({"not in A", "not in B"} if k == "single" else {k})
+                               for v in [*r[5]["reason_a"].values(), *r[5]["reason_b"].values()])
+                           for k in keys[1:]] for r in rows], float)
+    rng = np.random.default_rng(0)
+    boot = np.stack([per_img[rng.integers(0, len(per_img), len(per_img))].sum(0) for _ in range(2000)])
+    shares = boot[:, 1:] / boot[:, :1]
+    for k, (lo, hi) in zip(keys, np.percentile(shares, [2.5, 97.5], axis=0).T):
+        print(f"  95% CI {k:12s} {lo:.1%} - {hi:.1%}")
+
     rows = [r for r in rows if min(r[5]["na"], r[5]["nb"]) >= args.min_filaments]
     if args.pick == "worst":
         rows.sort(key=lambda r: r[5]["f1"])
