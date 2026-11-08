@@ -9,7 +9,7 @@ Two-stage instance segmentation of solar filaments in 2048×2048 full-disk H-alp
 3. **Assembly:** masks are pasted back from most to least confident box; duplicate masks are removed
    by mask NMS and contested pixels go to the higher probability.
 
-Technical report: [`report/report.md`](report/report.md).
+Technical report (LaTeX, competition template): [`report/latex/main.tex`](report/latex/main.tex).
 
 ## Results
 

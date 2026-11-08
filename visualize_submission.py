@@ -75,7 +75,7 @@ def main() -> None:
     p.add_argument("--n", type=int, default=4, help="images, spread from fewest to most filaments")
     p.add_argument("--size", type=int, default=768)
     p.add_argument("--zoom", type=int, default=640, help="side of the full-resolution zoom window, px")
-    p.add_argument("--out", type=Path, default=Path("report/figures/test_predictions.jpg"))
+    p.add_argument("--out", type=Path, default=Path("report/latex/figures/test_predictions.jpg"))
     args = p.parse_args()
 
     sub = pd.read_csv(args.csv)

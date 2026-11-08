@@ -46,7 +46,7 @@ def main() -> None:
     p.add_argument("--images", type=Path,
                    default=Path("/Users/vincentliu/Documents/MAGFiLO_1.0_Kaggle_2026/test/test_images"))
     p.add_argument("--stem", default="20130825141154Bh")
-    p.add_argument("--out", type=Path, default=Path("report/figures/pipeline.jpg"))
+    p.add_argument("--out", type=Path, default=Path("report/latex/figures/pipeline.jpg"))
     args = p.parse_args()
 
     sub = pd.read_csv(args.csv)
