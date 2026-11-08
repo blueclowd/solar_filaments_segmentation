@@ -122,7 +122,7 @@ sets) with the same settings; the YOLO weights from the last epoch are used.
 | Global U-Net, 30 epochs (best epoch 18), threshold 0.8 | 0.403 | — | 0.34 |
 | Two-stage, YOLO11s @ 1024 | 0.447 | 0.438 | 0.39 |
 | Two-stage, YOLO11m @ 1536 | 0.448 | 0.441 | — |
-| Two-stage, final models on all data | — | — | **[TODO: final public score]** |
+| Two-stage, final models on all data | — | — | 0.38 |
 | *Two-stage with ground-truth boxes (oracle)* | *0.686* | *0.683* | — |
 
 The two-stage pipeline improves validation PQ by 0.045 over the global U-Net and the public score by 0.05.
@@ -187,9 +187,12 @@ of a mostly empty disk, and every sample contains a filament.
 
 ![Final-model predictions on test images, from fewest to most filaments; one colour per filament. Right: full-resolution zoom of the busiest image.](figures/test_predictions.jpg)
 
-Masks follow the dark filament material, including curved and branching filaments, and neighbouring
-filaments are kept as separate instances. **[TODO: describe visible failure cases after inspecting the
-final figure.]**
+Masks follow the dark filament material of clearly visible filaments, including long curved ones near
+the limb, and neighbouring filaments are kept as separate instances. Two failure modes are visible.
+First, thin side branches or the faint end of a large filament are sometimes returned as extra small
+instances next to the main mask (lower right of the zoom), which costs a false positive or a split.
+Second, short dark lanes inside bright active regions (plage) are occasionally detected as filaments.
+Both are among the cases where annotators themselves disagree most (Section 2).
 
 ## 5. Discussion
 
