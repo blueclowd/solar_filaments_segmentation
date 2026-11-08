@@ -174,9 +174,10 @@ and PQ measures overlap with those bands. We keep BCE + Dice.
 |---|---|---|
 | YOLO11m training, 150 epochs, 962 sets | 2× T4 (Kaggle) | 3.66 h |
 | YOLO11m training, 150 epochs, 1,154 sets | 1× A10 | ≈ 3.4 h |
-| Per-filament U-Net training, 20 epochs | 1× T4 | ≈ 22 min (66 s/epoch) |
+| Per-filament U-Net training, 20 epochs, 594 images | 1× T4 | ≈ 22 min (66 s/epoch) |
+| Per-filament U-Net training, 20 epochs, 707 images | 1× A10 | ≈ 11 min (33 s/epoch) |
 | Global U-Net inference incl. flip TTA | 1× T4 | 0.45 s / image |
-| Two-stage inference incl. flip TTA | 1× T4 | **[TODO: s / image from predict_instances.py]** |
+| Two-stage inference incl. flip TTA (180 test images) | 1× A10 | 0.31 s / image |
 
 The per-filament model trains quickly because each sample is a 256×256 crop rather than a 512×512 region
 of a mostly empty disk, and every sample contains a filament.
