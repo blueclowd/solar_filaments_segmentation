@@ -173,7 +173,7 @@ and PQ measures overlap with those bands. We keep BCE + Dice.
 | Stage | Hardware | Time |
 |---|---|---|
 | YOLO11m training, 150 epochs, 962 sets | 2× T4 (Kaggle) | 3.66 h |
-| YOLO11m training, 150 epochs, 1,154 sets | 1× A10 | ≈ 3.4 h |
+| YOLO11m training, 150 epochs, 1,154 sets | 1× A10 | 3.08 h |
 | Per-filament U-Net training, 20 epochs, 594 images | 1× T4 | ≈ 22 min (66 s/epoch) |
 | Per-filament U-Net training, 20 epochs, 707 images | 1× A10 | ≈ 11 min (33 s/epoch) |
 | Global U-Net inference incl. flip TTA | 1× T4 | 0.45 s / image |
