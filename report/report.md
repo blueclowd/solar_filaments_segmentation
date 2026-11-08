@@ -126,6 +126,10 @@ sets) with the same settings; the YOLO weights from the last epoch are used.
 | *Two-stage with ground-truth boxes (oracle)* | *0.686* | *0.683* | — |
 
 The two-stage pipeline improves validation PQ by 0.045 over the global U-Net and the public score by 0.05.
+The final models, retrained on all images, predict about 17% more filaments on the test set at the same
+confidence threshold; raising it from 0.3 to 0.4 restores the earlier count but leaves the public score at
+0.38, so we keep the validated setting. The 0.01 gap to the YOLO11s submission is within leaderboard
+resolution (two decimals, partial test set).
 The gain is mostly recognition quality: RQ rises from 0.605 to 0.650 and SQ from 0.666 to 0.690, and
 merged filaments drop from 45 to 33 (global U-Net at threshold 0.8: 63 split, 45 merged).
 Breaking down the best configuration: SQ 0.690, RQ 0.650. Of 1,257 ground-truth filaments (all 192
