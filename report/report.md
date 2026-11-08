@@ -161,11 +161,12 @@ IoU removes overlapping duplicate detections of the same filament and reduces sp
 
 | Loss | Oracle PQ |
 |---|---|
-| BCE + Dice | 0.6975 |
+| BCE + Dice (two independent runs) | 0.6975 / 0.6963 |
 | BCE + Dice + Lovász hinge | 0.6981 |
 | BCE + Dice + clDice | 0.6839 |
 
-Lovász hinge, which directly optimises IoU, gives no measurable gain. clDice, designed for thin tubular
+The two baseline runs differ by 0.001, which sets the run-to-run noise level. Lovász hinge, which
+directly optimises IoU, stays within about twice that noise of the baseline: no measurable gain. clDice, designed for thin tubular
 structures, hurts: it rewards a continuous centreline, but annotators draw filaments as loose, wide bands,
 and PQ measures overlap with those bands. We keep BCE + Dice.
 
