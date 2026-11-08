@@ -15,7 +15,7 @@ Technical report: [`report/report.md`](report/report.md).
 
 | Method | Validation PQ | Public leaderboard |
 |---|---|---|
-| Global U-Net + connected components | 0.381 (per image) | 0.34 |
+| Global U-Net + connected components | 0.403 | 0.34 |
 | Two-stage, YOLO11m @ 1536 | 0.448 | 0.39 (YOLO11s @ 1024) |
 | Two-stage with ground-truth boxes (upper bound) | 0.686 | — |
 

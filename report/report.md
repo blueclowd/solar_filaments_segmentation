@@ -13,7 +13,7 @@ We segment individual solar filaments in 2048×2048 full-disk H-alpha images (MA
 pipeline. A YOLO11 detector proposes one box per filament; a U-Net with a ResNet-34 encoder then segments
 the filament inside each box from a full-resolution crop, conditioned on a box mask channel. Instances are
 assembled by confidence-ordered mask NMS. On a month-grouped validation split the pipeline reaches a
-panoptic quality (PQ) of 0.448, against 0.381 for a single global U-Net with connected-component
+panoptic quality (PQ) of 0.448, against 0.403 for a single global U-Net with connected-component
 post-processing; on the public leaderboard it scores 0.39 (global U-Net: 0.34). With ground-truth boxes the
 same segmenter reaches PQ 0.686, so detection is the bottleneck. We show that this ceiling is largely set by
 the labels: two annotators of the same image agree on only 58% of filaments at IoU > 0.5.
@@ -119,14 +119,15 @@ sets) with the same settings; the YOLO weights from the last epoch are used.
 | Method | PQ (pooled) | PQ (per image) | Public LB |
 |---|---|---|---|
 | Global U-Net, 10 epochs, threshold 0.7 | — | — | 0.32 |
-| Global U-Net, threshold 0.8 **[TODO: confirm run — 10 or 30 epochs]** | — | 0.381 | — |
-| Global U-Net, 30 epochs (best epoch 18) | — | — | 0.34 |
+| Global U-Net, 30 epochs (best epoch 18), threshold 0.8 | 0.403 | — | 0.34 |
 | Two-stage, YOLO11s @ 1024 | 0.447 | 0.438 | 0.39 |
 | Two-stage, YOLO11m @ 1536 | 0.448 | 0.441 | — |
 | Two-stage, final models on all data | — | — | **[TODO: final public score]** |
 | *Two-stage with ground-truth boxes (oracle)* | *0.686* | *0.683* | — |
 
-The two-stage pipeline improves validation PQ by 0.06 over the global U-Net and the public score by 0.05.
+The two-stage pipeline improves validation PQ by 0.045 over the global U-Net and the public score by 0.05.
+The gain is mostly recognition quality: RQ rises from 0.605 to 0.650 and SQ from 0.666 to 0.690, and
+merged filaments drop from 45 to 33 (global U-Net at threshold 0.8: 63 split, 45 merged).
 Breaking down the best configuration: SQ 0.690, RQ 0.650. Of 1,257 ground-truth filaments (all 192
 validation annotation sets), 762 are matched and 495 missed; there are 326 false positives, and 50 split
 and 33 merged filaments.
@@ -194,7 +195,7 @@ final figure.]**
 
 **What worked.** Separating *where* a filament is from *what shape* it has. The detector resolves
 instance identity (split and merge decisions), and the segmenter works at full resolution on one object
-at a time, guided by the box channel. This raised validation PQ from 0.381 to 0.448.
+at a time, guided by the box channel. This raised validation PQ from 0.403 to 0.448.
 
 **What did not.** A larger detector and input size (YOLO11m at 1536 instead of YOLO11s at 1024, about
 4× the training cost) gave no end-to-end gain. Thin-structure and IoU losses did not help the segmenter.
