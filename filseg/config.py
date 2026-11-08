@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import yaml
@@ -21,8 +22,11 @@ def load_config(path: str | Path, overrides: list[str] | None = None) -> dict:
 
 
 def resolve_data_root(root: str | Path) -> Path:
-    """Return the dataset root (the folder holding train/ and test/)."""
-    root = Path(root)
+    """Return the dataset root (the folder holding train/ and test/).
+
+    The FILSEG_DATA_ROOT environment variable takes precedence over `root`, which may be a path
+    stored in a checkpoint trained on another machine."""
+    root = Path(os.environ.get("FILSEG_DATA_ROOT") or root)
     if (root / "train" / ANN_NAME).exists():
         return root
     for search in (root, Path("/kaggle/input")):
