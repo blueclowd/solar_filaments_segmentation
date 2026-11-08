@@ -14,10 +14,16 @@ RUNS=${RUNS:-/mnt/workspace/runs}
 NGPU=$(python -c "import torch; print(max(torch.cuda.device_count(), 1))")
 DEVICES=$(seq -s, 0 $((NGPU - 1)))
 YOLO_BATCH=${YOLO_BATCH:-$((4 * NGPU))}
+YOLO_EPOCHS=150
 echo "GPUs: $NGPU (device=$DEVICES)  YOLO batch: $YOLO_BATCH  runs: $RUNS"
 
-if [ ! -f "$RUNS/yolo_full/train/weights/last.pt" ] || [ -n "${RETRAIN_YOLO:-}" ]; then
-  python train_yolo.py --full --model yolo11m.pt --imgsz 1536 --epochs 150 --batch "$YOLO_BATCH" \
+# last.pt is written every epoch, so only a results.csv with all epochs means YOLO finished
+RESULTS="$RUNS/yolo_full/train/results.csv"
+DONE_EPOCHS=$( [ -f "$RESULTS" ] && echo $(( $(wc -l < "$RESULTS") - 1 )) || echo 0 )
+if [ "$DONE_EPOCHS" -lt "$YOLO_EPOCHS" ] || [ -n "${RETRAIN_YOLO:-}" ]; then
+  echo "training YOLO (found $DONE_EPOCHS/$YOLO_EPOCHS finished epochs; starting from scratch)"
+  rm -rf "$RUNS/yolo_full/train"
+  python train_yolo.py --full --model yolo11m.pt --imgsz 1536 --epochs "$YOLO_EPOCHS" --batch "$YOLO_BATCH" \
     --out-dir "$RUNS/yolo_full" scale=0.25 "device=$DEVICES"
 fi
 
